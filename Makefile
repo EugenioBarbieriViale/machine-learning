@@ -1,4 +1,4 @@
-NAME=ml
+NAME=and_relu
 
 all: $(SRC)
-	clang -Wall -Wextra $(NAME).c
+	clang -Wall -Wextra $(NAME).c -lm
