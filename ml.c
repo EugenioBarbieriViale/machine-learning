@@ -45,11 +45,17 @@ int main() {
 		w -= rate * dw;
 		b -= rate * db;
 
-		printf("loss = %f, w = %f, b = %f\n", loss(w, b), w, b);
+		/* printf("loss = %f, w = %f, b = %f\n", loss(w, b), w, b); */
 	}
+	printf("Neuron trained successfully: w = %f, b = %f\n", w, b);
 
-	printf("-------------------------\n");
-	printf("w = %f, b = %f\n", w, b);
+	int num;
+	printf("Enter number: ");
+	scanf("%d", &num);
+
+	printf("-------------------------------\n");
+	printf("Expected output: %d\n", num*2);
+	printf("Real output: %f\n", num*w);
 
 	return 0;
 }
