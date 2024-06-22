@@ -2,9 +2,6 @@
 #include <stdlib.h>
 #include <math.h>
 
-// NOTES
-// this train is for the xor. You cant use it for nand / or
-
 float train[][3] = {
 	{0,0, 0},
 	{1,0, 1},
@@ -16,116 +13,152 @@ float train[][3] = {
 
 #define h 1e-3
 #define N 10000
-#define rate 1e-3
+#define rate 10
 
+typedef struct {
+	float or_w1;
+	float or_w2;
+	float or_b;
 
-struct OR {
-	float w1;
-	float w2;
-	float b;
-};
+	float nand_w1;
+	float nand_w2;
+	float nand_b;
 
-struct NAND {
-	float w1;
-	float w2;
-	float b;
-};
-
-struct AND {
-	float w_or;
-	float w_nand;
-	float b;
-};
+	float and_w1;
+	float and_w2;
+	float and_b;
+} Xor;
 
 float sigmoid(float x) {
 	return 1.f/(1.f + expf(-x));
 }
 
-float rand_float() {
-	return (float) rand() / (float) RAND_MAX; 
+float rand_float(void) {
+	return (float) rand() / (float) RAND_MAX;
 }
 
-float loss(float w1, float w2, float b) {
-	float e = 0.f;
+float forward(Xor m, float x1, float x2) {
+	float y_or = sigmoid(m.or_w1 * x1 + m.or_w2 * x2 + m.or_b);
+	float y_nand = sigmoid(m.nand_w1 * x1 + m.nand_w2 * x2 + m.nand_b);
+	return sigmoid(m.and_w1 * y_or + m.and_w2 * y_nand + m.and_b);
+}
 
-	for (int i=0; i < train_count; i++) {
+float loss(Xor m) {
+	float e = 0.f;
+	for (int i=0; i<train_count; i++) {
 		float x1 = train[i][0];
 		float x2 = train[i][1];
 
-		float exp_out = train[i][2];
-		float out = sigmoid(w1 * x1 + w2 * x2 + b);
-
-		e = (out - exp_out);
-		e *= e;
+		float out = forward(m, x1, x2);
+		e += (train[i][2] - out) * (train[i][2] - out);
 	}
 	e /= train_count;
-
+	
 	return e;
 }
 
-float *find_param(float w1, float w2, float b) {
-	static float param[3];
+Xor rand_xor(void) {
+	Xor m;
+	m.or_w1 = rand_float();
+	m.or_w2 = rand_float();
+	m.or_b = rand_float();
 
-	for (int i=0; i < N; i++) {
-		float dw1 = (loss(w1 + h, w2, b) - loss(w1, w2, b)) / h;
-		float dw2 = (loss(w1, w2 + h, b) - loss(w1, w2, b)) / h;
-		float db = (loss(w1, w2, b + h) - loss(w1, w2, b)) / h;
+	m.nand_w1 = rand_float();
+	m.nand_w2 = rand_float();
+	m.nand_b = rand_float();
 
-		w1 -= rate * dw1;
-		w2 -= rate * dw2;
-		b -= rate * db;
-	}
-
-	param[0] = w1;
-	param[1] = w2;
-	param[2] = b;
-	return param;
+	m.and_w1 = rand_float();
+	m.and_w2 = rand_float();
+	m.and_b = rand_float();
+	return m;
 }
 
-float hidden_layer(float y_or[], float y_nand[]) {
-	for (int i=0; i < train_count; i++) {
-		float x1 = y_or[i];
-		float x2 = y_nand[i];
-	
-		float exp_out = train[i][2];
-		float out = sigmoid(w1 * x1 + w2 * x2 + b);
+Xor apply_diff(Xor m, Xor g) {
+	m.or_w1 -= rate * g.or_w1;
+	m.or_w2 -= rate * g.or_w2;
+	m.or_b -= rate * g.or_b;
 
-		e = (out - exp_out);
-		e *= e;
-	}
-	e /= train_count;
+	m.nand_w1 -= rate * g.nand_w1;
+	m.nand_w2 -= rate * g.nand_w2;
+	m.nand_b -= rate * g.nand_b;
+
+	m.and_w1 -= rate * g.and_w1;
+	m.and_w2 -= rate * g.and_w2;
+	m.and_b -= rate * g.and_b;
+
+	return m;
+}
+
+// Find the gradient
+Xor finite_diff(Xor m) {
+	Xor g;
+	float prev_loss = loss(m);
+	float saved;
+
+	saved = m.or_w1;
+	m.or_w1 += h;
+	g.or_w1 = (loss(m) - prev_loss) / h;
+	m.or_w1 = saved;
+
+	saved = m.or_w2;
+	m.or_w2 += h;
+	g.or_w2 = (loss(m) - prev_loss) / h;
+	m.or_w2 = saved;
+
+	saved = m.or_b;
+	m.or_b += h;
+	g.or_b = (loss(m) - prev_loss) / h;
+	m.or_b = saved;
+
+	saved = m.nand_w1;
+	m.nand_w1 += h;
+	g.nand_w1 = (loss(m) - prev_loss) / h;
+	m.nand_w1 = saved;
+
+	saved = m.nand_w2;
+	m.nand_w2 += h;
+	g.nand_w2 = (loss(m) - prev_loss) / h;
+	m.nand_w2 = saved;
+
+	saved = m.nand_b;
+	m.nand_b += h;
+	g.nand_b = (loss(m) - prev_loss) / h;
+	m.nand_b = saved;
+
+	saved = m.and_w1;
+	m.and_w1 += h;
+	g.and_w1 = (loss(m) - prev_loss) / h;
+	m.and_w1 = saved;
+
+	saved = m.and_w2;
+	m.and_w2 += h;
+	g.and_w2 = (loss(m) - prev_loss) / h;
+	m.and_w2 = saved;
+
+	saved = m.and_b;
+	m.and_b += h;
+	g.and_b = (loss(m) - prev_loss) / h;
+	m.and_b = saved;
+
+	return g;
 }
 
 int main() {
-	/* float y_and = and.w_or * y_or + and.w_nand * y_nand + and.b; */
+	Xor m = rand_xor();
 
-	float *param_or = find_param(0.1,0.2,0.2);
-	float *param_nand = find_param(0.2,0.2,0.3);
-
-	struct OR or;
-	or.w1 = param_or[0];
-	or.w2 = param_or[1];
-	or.b = param_or[0];
-
-	struct NAND nand;
-	nand.w1 = param_nand[0];
-	nand.w2 = param_nand[1];
-	nand.b = param_nand[2];
-
-	float y_or[4];
-	float y_nand[4];
-	for (int i=0; i < train_count; i++) {
-		y_or[i] = or.w1 * train[i][0] + or.w2 * train[i][1] + or.b;
-		y_nand[i] = nand.w1 * train[i][0] + nand.w2 * train[i][1] + nand.b;
+	for (int i=0; i<N; i++) {
+		Xor g = finite_diff(m);
+		m = apply_diff(m, g);
+		/* printf("%f\n", loss(m)); */
 	}
 
-	hidden_layer(y_or, y_nand);
+	for (int i=0; i<train_count; i++) {
+		float in1 = train[i][0];
+		float in2 = train[i][1];
 
-	/* float *param_and = find_param(y_or, y_nand, ) */
-
-	/* printf("OR ---  w1: %f  w2: %f  b: %f\n", param_or[0], param_or[1], param_or[2]); */
-	/* printf("NAND -  w1: %f  w2: %f  b: %f\n", param_nand[0], param_nand[1], param_nand[2]); */
-	/* printf("%f", y_nand[3]); */
+		float out = forward(m, in1, in2);
+		printf("%0.f | %0.f = %0.f -> %f\n", in1, in2, train[i][2], out);
+	}
 
 	return 0;
 }
