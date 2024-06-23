@@ -1,4 +1,4 @@
-NAME=twice
+NAME=xor
 
 all: $(SRC)
-	clang -Wall -Wextra $(NAME).c
+	clang -o $(NAME) -Wall -Wextra $(NAME).c -lm
