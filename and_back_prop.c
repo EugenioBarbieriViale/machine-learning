@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-float train[][3] = {
+double train[][3] = {
 	{0,0, 0},
 	{1,0, 0},
 	{0,1, 0},
@@ -15,43 +15,43 @@ float train[][3] = {
 #define epochs 1000
 #define rate 10
 
-float sigmoid(float x) {
+double sigmoid(double x) {
 	return 1.f/(1.f + expf(-x));
 }
 
-float d_sigmoid(float x) {
+double d_sigmoid(double x) {
     return sigmoid(x)*(1-sigmoid(x));
 }
 
-float rand_float(void) {
-	return (float) rand() / (float) RAND_MAX;
+double rand_double(void) {
+	return (double) rand() / (double) RAND_MAX;
 }
 
-float forward(float w1, float w2, float b, float x1, float x2) {
+double forward(double w1, double w2, double b, double x1, double x2) {
     return sigmoid(w1 * x1 + w2 * x2 + b);
 }
 
-float loss(float w1, float w2, float b) {
-    float cost = 0;
+double loss(double w1, double w2, double b) {
+    double cost = 0;
     for (int i=0; i<train_count; i++) {
-        float x1 = train[i][0];
-        float x2 = train[i][1];
+        double x1 = train[i][0];
+        double x2 = train[i][1];
 
-        float label = train[i][2];
-        float out = forward(w1, w2, b, x1, x2);
+        double label = train[i][2];
+        double out = forward(w1, w2, b, x1, x2);
 
         cost += square(out - label);
     }
     return (cost / train_count);
 }
 
-void gloss(float w1, float w2, float b, float *dw1, float *dw2, float *db) {
+void gloss(double w1, double w2, double b, double *dw1, double *dw2, double *db) {
     for (int i=0; i<train_count; i++) {
-        float x1 = train[i][0];
-        float x2 = train[i][1];
+        double x1 = train[i][0];
+        double x2 = train[i][1];
 
-        float label = train[i][2];
-        float a = forward(w1, w2, b, x1, x2);
+        double label = train[i][2];
+        double a = forward(w1, w2, b, x1, x2);
 
         *dw1 += 2 * (a - label) * a * (1 - a) * x1;
         *dw2 += 2 * (a - label) * a * (1 - a) * x2;
@@ -63,33 +63,33 @@ void gloss(float w1, float w2, float b, float *dw1, float *dw2, float *db) {
     *db  /= train_count;
 }
 
-void update(float *w1, float *w2, float *b, float dw1, float dw2, float db) {
+void update(double *w1, double *w2, double *b, double dw1, double dw2, double db) {
     *w1 -= rate * dw1;
     *w2 -= rate * dw2;
     *b  -= rate *  db;
 }
 
-void print_net(float w1, float w2, float b) {
+void print_net(double w1, double w2, double b) {
     for (int i=0; i<train_count; i++) {
-        float out = forward(w1, w2, b, train[i][0], train[i][1]);
+        double out = forward(w1, w2, b, train[i][0], train[i][1]);
         printf("%.1f - %.1f: (%.1f) -> %f\n", train[i][0], train[i][1], train[i][2], out);
     }
 }
 
 int main() {
-    float w1 = rand_float();
-    float w2 = rand_float();
-    float b  = rand_float();
+    double w1 = rand_double();
+    double w2 = rand_double();
+    double b  = rand_double();
 
-    float dw1 = 0;
-    float dw2 = 0;
-    float db  = 0;
+    double dw1 = 0;
+    double dw2 = 0;
+    double db  = 0;
 
     for (int i=0; i<epochs; i++) {
         gloss(w1, w2, b, &dw1, &dw2, &db);
         update(&w1, &w2, &b, dw1, dw2, db);
 
-        float cost = loss(w1, w2, b);
+        double cost = loss(w1, w2, b);
         printf("%f\n", cost);
     }
 
